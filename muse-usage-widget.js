@@ -2,7 +2,6 @@
 // Muse が GitHub に公開している usage.json を読んで表示します。
 // 使い方: Scriptable で新規スクリプトを作り、この内容を全部貼り付けて保存。
 // ホーム画面のウィジェットの設定で、このスクリプトを選んでください。
-// レイアウトは現在のウィジェットサイズ（横幅いっぱいに広げた表示）に合わせています。
 
 const DATA_URL = "https://raw.githubusercontent.com/gottaTS/muse-usage/main/usage.json";
 const CACHE_FILE = "muse-usage-cache.json";
@@ -26,8 +25,8 @@ async function loadData() {
 
 function makeBarImage(percent) {
   // 表示領域より大きく描く。Scriptable が表示幅に合わせて縮小するので、
-  // バーは常に左右いっぱいの幅になる。
-  const W = 1000, H = 40, r = 20;
+  // バーは文字の列とぴったり同じ幅（左右いっぱい）になる。
+  const W = 300, H = 22, r = 11;
   const dc = new DrawContext();
   dc.size = new Size(W, H);
   dc.opaque = false;
@@ -63,13 +62,13 @@ function fmtUpdated(iso) {
 
 async function buildWidget() {
   const widget = new ListWidget();
-  widget.setPadding(16, 16, 16, 16);
+  widget.setPadding(12, 12, 12, 12);
   const data = await loadData();
 
   const title = widget.addText("Muse 週間使用量");
-  title.font = Font.semiboldSystemFont(14);
+  title.font = Font.semiboldSystemFont(12);
   title.textColor = Color.gray();
-  widget.addSpacer(6);
+  widget.addSpacer(4);
 
   const pct = data.weekly ? data.weekly.used_percent : null;
   if (pct !== null && pct !== undefined) {
@@ -77,34 +76,38 @@ async function buildWidget() {
     row.layoutHorizontally();
     row.bottomAlignContent();
     const big = row.addText(`${pct}%`);
-    big.font = Font.boldSystemFont(40);
+    big.font = Font.boldSystemFont(30);
     row.addSpacer(6);
     const used = row.addText("使用済み");
-    used.font = Font.systemFont(13);
+    used.font = Font.systemFont(11);
     used.textColor = Color.gray();
-    widget.addSpacer(8);
+    widget.addSpacer(6);
     widget.addImage(makeBarImage(pct));
-    widget.addSpacer(10);
+    widget.addSpacer(8);
     const rp = resetParts(data.weekly.resets_at);
-    const reset = widget.addText(
-      rp.days !== null ? `リセット: ${rp.md}（あと${rp.days}日）` : `リセット: ${rp.md}`
-    );
-    reset.font = Font.systemFont(13);
+    const reset = widget.addText(`リセット: ${rp.md}`);
+    reset.font = Font.systemFont(11);
+    if (rp.days !== null) {
+      widget.addSpacer(2);
+      const dl = widget.addText(`あと${rp.days}日`);
+      dl.font = Font.systemFont(11);
+      dl.textColor = Color.gray();
+    }
   }
 
   if (data.additional_tokens) {
-    widget.addSpacer(5);
+    widget.addSpacer(4);
     const rest = data.additional_tokens.remaining_text.replace(" tokens left", "");
     const extra = widget.addText(
-      `追加トークン: ${data.additional_tokens.used_percent}%（残り ${rest}）`
+      `追加: ${data.additional_tokens.used_percent}%（残り ${rest}）`
     );
-    extra.font = Font.systemFont(13);
+    extra.font = Font.systemFont(11);
     extra.textColor = Color.gray();
   }
 
   widget.addSpacer();
   const upd = widget.addText(fmtUpdated(data.updated_at));
-  upd.font = Font.systemFont(11);
+  upd.font = Font.systemFont(10);
   upd.textColor = Color.gray();
 
   widget.refreshAfterDate = new Date(Date.now() + 15 * 60 * 1000);
