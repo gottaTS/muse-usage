@@ -1,7 +1,7 @@
 // Muse 使用量ウィジェット (Scriptable)
 // Muse が GitHub に公開している usage.json を読んで表示します。
 // 使い方: Scriptable に新規スクリプトを作り、この内容を貼り付けて保存。
-// ホーム画面のウィジェット（中サイズ推奨）でこのスクリプトを選んでください。
+// ホーム画面のウィジェット（小・中どちらでも可）でこのスクリプトを選んでください。
 
 const DATA_URL = "https://raw.githubusercontent.com/gottaTS/muse-usage/main/usage.json";
 const CACHE_FILE = "muse-usage-cache.json";
@@ -23,8 +23,8 @@ async function loadData() {
   }
 }
 
-function makeBar(percent) {
-  const w = 260, h = 10, r = 5;
+function makeBar(percent, w) {
+  const h = 10, r = 5;
   const dc = new DrawContext();
   dc.size = new Size(w, h);
   dc.opaque = false;
@@ -43,13 +43,13 @@ function makeBar(percent) {
   return dc.getImage();
 }
 
-function fmtReset(iso) {
-  if (!iso) return "";
+function resetParts(iso) {
+  if (!iso) return { md: "", days: null };
   const d = new Date(iso);
   const now = new Date();
   const days = Math.ceil((d - now) / 86400000);
   const md = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  return days > 0 ? `${md}（あと${days}日）` : md;
+  return { md, days: days > 0 ? days : null };
 }
 
 function fmtUpdated(iso) {
@@ -59,8 +59,14 @@ function fmtUpdated(iso) {
 }
 
 async function buildWidget() {
+  const family = config.widgetFamily || "medium";
+  const small = family === "small";
   const widget = new ListWidget();
-  widget.setPadding(14, 16, 14, 16);
+  if (small) {
+    widget.setPadding(12, 12, 12, 12);
+  } else {
+    widget.setPadding(14, 16, 14, 16);
+  }
   let data = null;
   try {
     data = await loadData();
@@ -71,7 +77,7 @@ async function buildWidget() {
   }
 
   const title = widget.addText("Muse 週間使用量");
-  title.font = Font.semiboldSystemFont(13);
+  title.font = Font.semiboldSystemFont(small ? 12 : 13);
   title.textColor = Color.gray();
   widget.addSpacer(4);
 
@@ -81,24 +87,38 @@ async function buildWidget() {
     row.layoutHorizontally();
     row.bottomAlignContent();
     const big = row.addText(`${pct}%`);
-    big.font = Font.boldSystemFont(34);
+    big.font = Font.boldSystemFont(small ? 30 : 34);
     row.addSpacer(6);
     const used = row.addText("使用済み");
-    used.font = Font.systemFont(12);
+    used.font = Font.systemFont(small ? 11 : 12);
     used.textColor = Color.gray();
     widget.addSpacer(6);
-    widget.addImage(makeBar(pct));
+    widget.addImage(makeBar(pct, small ? 131 : 260));
     widget.addSpacer(8);
-    const reset = widget.addText(`リセット: ${fmtReset(data.weekly.resets_at)}`);
-    reset.font = Font.systemFont(12);
+    const rp = resetParts(data.weekly.resets_at);
+    const reset = widget.addText(`リセット: ${rp.md}`);
+    reset.font = Font.systemFont(small ? 11 : 12);
+    if (rp.days !== null) {
+      if (small) {
+        widget.addSpacer(2);
+        const dl = widget.addText(`あと${rp.days}日`);
+        dl.font = Font.systemFont(11);
+        dl.textColor = Color.gray();
+      } else {
+        reset.text = `リセット: ${rp.md}（あと${rp.days}日）`;
+      }
+    }
   }
 
   if (data.additional_tokens) {
     widget.addSpacer(4);
+    const rest = data.additional_tokens.remaining_text.replace(" tokens left", "");
     const extra = widget.addText(
-      `追加トークン: ${data.additional_tokens.used_percent}% 使用（残り ${data.additional_tokens.remaining_text.replace(" tokens left", "")}）`
+      small
+        ? `追加: ${data.additional_tokens.used_percent}%（残り ${rest}）`
+        : `追加トークン: ${data.additional_tokens.used_percent}% 使用（残り ${rest}）`
     );
-    extra.font = Font.systemFont(12);
+    extra.font = Font.systemFont(small ? 11 : 12);
     extra.textColor = Color.gray();
   }
 
@@ -114,6 +134,8 @@ async function buildWidget() {
 const widget = await buildWidget();
 if (config.runsInWidget) {
   Script.setWidget(widget);
+} else if (config.widgetFamily === "small") {
+  widget.presentSmall();
 } else {
   widget.presentMedium();
 }
