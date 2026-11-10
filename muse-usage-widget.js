@@ -23,8 +23,8 @@ async function loadData() {
   }
 }
 
-function makeBar(percent, w) {
-  const h = 10, r = 5;
+function makeBar(percent, w, h) {
+  const r = 6;
   const dc = new DrawContext();
   dc.size = new Size(w, h);
   dc.opaque = false;
@@ -93,7 +93,7 @@ async function buildWidget() {
     used.font = Font.systemFont(small ? 11 : 12);
     used.textColor = Color.gray();
     widget.addSpacer(6);
-    widget.addImage(makeBar(pct, small ? 131 : 260));
+    widget.addImage(makeBar(pct, small ? 200 : 360, small ? 13 : 12));
     widget.addSpacer(8);
     const rp = resetParts(data.weekly.resets_at);
     const reset = widget.addText(`リセット: ${rp.md}`);
