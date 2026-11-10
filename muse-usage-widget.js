@@ -1,7 +1,7 @@
 // Muse 使用量ウィジェット (Scriptable)
 // Muse が GitHub に公開している usage.json を読んで表示します。
-// 使い方: Scriptable に新規スクリプトを作り、この内容を貼り付けて保存。
-// ホーム画面のウィジェット（小・中どちらでも可）でこのスクリプトを選んでください。
+// 使い方: Scriptable で新規スクリプトを作り、この内容を全部貼り付けて保存。
+// ホーム画面のウィジェットの設定で、このスクリプトを選んでください。
 
 const DATA_URL = "https://raw.githubusercontent.com/gottaTS/muse-usage/main/usage.json";
 const CACHE_FILE = "muse-usage-cache.json";
@@ -23,20 +23,22 @@ async function loadData() {
   }
 }
 
-function makeBar(percent, w, h) {
-  const r = 6;
+function makeBarImage(percent, w, h) {
+  // 表示サイズの2倍で描いて、表示時に imageSize で大きさを固定する
+  const scale = 2;
+  const W = w * scale, H = h * scale, r = 6 * scale;
   const dc = new DrawContext();
-  dc.size = new Size(w, h);
+  dc.size = new Size(W, H);
   dc.opaque = false;
   dc.respectScreenScale = true;
   const bg = new Path();
-  bg.addRoundedRect(new Rect(0, 0, w, h), r, r);
+  bg.addRoundedRect(new Rect(0, 0, W, H), r, r);
   dc.addPath(bg);
   dc.setFillColor(new Color("#8E8E93", 0.35));
   dc.fillPath();
-  const filled = Math.max(r * 2, Math.min(w, (w * percent) / 100));
+  const filled = Math.max(r * 2, Math.min(W, (W * percent) / 100));
   const fg = new Path();
-  fg.addRoundedRect(new Rect(0, 0, filled, h), r, r);
+  fg.addRoundedRect(new Rect(0, 0, filled, H), r, r);
   dc.addPath(fg);
   dc.setFillColor(percent >= 90 ? new Color("#FF3B30") : percent >= 70 ? new Color("#FF9500") : new Color("#0A84FF"));
   dc.fillPath();
@@ -67,14 +69,7 @@ async function buildWidget() {
   } else {
     widget.setPadding(14, 16, 14, 16);
   }
-  let data = null;
-  try {
-    data = await loadData();
-  } catch (e) {
-    const t = widget.addText("Muse 使用量を取得できませんでした");
-    t.font = Font.semiboldSystemFont(13);
-    return widget;
-  }
+  const data = await loadData();
 
   const title = widget.addText("Muse 週間使用量");
   title.font = Font.semiboldSystemFont(small ? 12 : 13);
@@ -93,7 +88,10 @@ async function buildWidget() {
     used.font = Font.systemFont(small ? 11 : 12);
     used.textColor = Color.gray();
     widget.addSpacer(6);
-    widget.addImage(makeBar(pct, small ? 200 : 360, small ? 13 : 12));
+    const barW = small ? 150 : 320;
+    const barH = 12;
+    const bar = widget.addImage(makeBarImage(pct, barW, barH));
+    bar.imageSize = new Size(barW, barH);
     widget.addSpacer(8);
     const rp = resetParts(data.weekly.resets_at);
     const reset = widget.addText(`リセット: ${rp.md}`);
@@ -131,12 +129,28 @@ async function buildWidget() {
   return widget;
 }
 
-const widget = await buildWidget();
-if (config.runsInWidget) {
-  Script.setWidget(widget);
-} else if (config.widgetFamily === "small") {
-  widget.presentSmall();
-} else {
-  widget.presentMedium();
+async function main() {
+  const widget = await buildWidget();
+  if (config.runsInWidget) {
+    Script.setWidget(widget);
+  } else {
+    widget.presentMedium();
+  }
+}
+
+try {
+  await main();
+} catch (e) {
+  const errWidget = new ListWidget();
+  const t = errWidget.addText("読み込みエラー");
+  t.font = Font.semiboldSystemFont(13);
+  const m = errWidget.addText(String(e && e.message ? e.message : e));
+  m.font = Font.systemFont(11);
+  m.textColor = Color.red();
+  if (config.runsInWidget) {
+    Script.setWidget(errWidget);
+  } else {
+    errWidget.presentMedium();
+  }
 }
 Script.complete();
