@@ -1,8 +1,8 @@
 {
-  "raw": "The user does not have a subscription.\nUsage: 36% of free weekly limit.\nWeekly limit resets Nov 20 at 12:18 PM JST\nAdditional tokens: 1% used (1.9B tokens left)",
+  "raw": "The user does not have a subscription.\nUsage: 37% of free weekly limit.\nWeekly limit resets Nov 20 at 12:18 PM JST\nAdditional tokens: 1% used (1.9B tokens left)",
   "plan": "free",
   "weekly": {
-    "used_percent": 36,
+    "used_percent": 37,
     "resets_at": "2026-11-20T12:18:00+09:00",
     "resets_text": "Nov 20 at 12:18 PM JST"
   },
@@ -10,5 +10,5 @@
     "used_percent": 1,
     "remaining_text": "1.9B tokens left"
   },
-  "updated_at": "2026-11-17T08:33:48+09:00"
+  "updated_at": "2026-11-17T11:03:48+09:00"
 }
